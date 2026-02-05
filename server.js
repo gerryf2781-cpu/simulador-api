@@ -89,6 +89,9 @@ io.on("connection", (socket) => {
 });
 
 // 9. Arrancar el servidor
-server.listen(4000, "192.168.1.210", () => {
-  console.log("API simuladora escuchando en todas las IPs en el puerto 4000");
+const PORT = process.env.PORT || 4000;
+
+server.listen(PORT, () => {
+  console.log("Servidor escuchando en puerto", PORT);
 });
+
