@@ -1,38 +1,29 @@
 const fs = require("fs");
 const path = require("path");
 
-
-
-// 1. Importamos librerías
+// ===== IMPORTS =====
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
 
-// 2. Creamos la app
+// ===== APP =====
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: "*" }
 });
 
-// 3. Configuración básica
 app.use(cors());
 app.use(express.json());
 
-// 4. Datos de prueba
-const usuarios = ["Juan", "María", "Carlos", "Ana"];
-const puertas = ["Entrada", "Oficinas", "Almacén"];
-const resultados = ["Acceso permitido", "Acceso denegado"];
-
-
+// ===== DATOS SIMULADOS =====
 function obtenerImagenAleatoria() {
   const carpeta = path.join(__dirname, "imagenes");
   const archivos = fs.readdirSync(carpeta);
 
   const imagen = archivos[Math.floor(Math.random() * archivos.length)];
   const ruta = path.join(carpeta, imagen);
-
   const base64 = fs.readFileSync(ruta).toString("base64");
 
   return `data:image/jpeg;base64,${base64}`;
@@ -48,12 +39,19 @@ function generarEvento() {
   };
 }
 
+// ===== ENDPOINTS =====
 
+// Endpoint de prueba (muy importante)
+app.get("/", (req, res) => {
+  res.send("API simulador kiosco activa");
+});
 
-
-// 6. Endpoint para enviar UN evento
+// Enviar UN evento
 app.post("/simular", (req, res) => {
   const evento = generarEvento();
+
+  console.log("📤 Enviando evento al kiosco:", evento);
+
   io.emit("nuevo-evento", evento);
 
   res.json({
@@ -62,36 +60,18 @@ app.post("/simular", (req, res) => {
   });
 });
 
-// 7. Envío automático cada 3 segundos
-let intervalo = null;
-
-app.post("/iniciar", (req, res) => {
-  if (intervalo) return res.json({ mensaje: "Ya está corriendo" });
-
-  intervalo = setInterval(() => {
-    const evento = generarEvento();
-    io.emit("nuevo-evento", evento);
-    console.log("Evento:", evento);
-  }, 3000);
-
-  res.json({ mensaje: "Simulación iniciada" });
-});
-
-app.post("/detener", (req, res) => {
-  clearInterval(intervalo);
-  intervalo = null;
-  res.json({ mensaje: "Simulación detenida" });
-});
-
-// 8. Cuando un kiosco se conecta
+// ===== SOCKET =====
 io.on("connection", (socket) => {
-  console.log("Kiosco conectado");
+  console.log("✅ Kiosco conectado:", socket.id);
+
+  socket.on("disconnect", () => {
+    console.log("❌ Kiosco desconectado:", socket.id);
+  });
 });
 
-// 9. Arrancar el servidor
+// ===== SERVIDOR (RENDER FRIENDLY) =====
 const PORT = process.env.PORT || 4000;
 
 server.listen(PORT, () => {
   console.log("Servidor escuchando en puerto", PORT);
 });
-
